@@ -25,6 +25,33 @@ if (process.env.NODE_ENV === 'production') {
   }))
 }
 
+// RoleChat 演示访问码验证
+app.use('/api/chat', (req, res, next) => {
+  const expectedCode = process.env.DEMO_ACCESS_CODE
+
+  // 线上没有配置密码时，禁止调用 AI
+  if (process.env.NODE_ENV === 'production' && !expectedCode) {
+    return res.status(503).json({
+      error: '服务端尚未配置演示访问码'
+    })
+  }
+
+  // 本地未配置访问码时，允许开发测试
+  if (!expectedCode) {
+    return next()
+  }
+
+  const providedCode = req.get('X-Demo-Code')
+
+  if (providedCode !== expectedCode) {
+    return res.status(403).json({
+      error: '演示访问码错误，请重新输入'
+    })
+  }
+
+  next()
+})
+
 app.post('/api/chat', async (req, res) => {
   const {
     messages,
